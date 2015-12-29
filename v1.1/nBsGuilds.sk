@@ -1,0 +1,889 @@
+options:
+	tag: &7[&6Gildia&7]
+
+#===================================#
+
+	create.vip.Cost: 32 diamond
+
+	create.player.Cost: 64 diamond
+
+	create.vip.error.Message.no-Items: &cAby zalozyc gildie potrzebujesz (&632&c) diamenty!
+	create.player.error.Message.no-Items: &cAby zalozyc gildie potrzebujesz (&664&c) diamenty!
+
+	#Swiat w ktorym maja sie tworzyc gildie
+	World: world
+
+#===================================#
+
+	#Dlugosci znakow:
+	lengthOf.maxTagGuild: 4
+	lengthOf.minTagGuild: 3
+
+	lengthOf.maxFullNameGuild: 22
+	lengthOf.minFullNameGuild: 8
+
+#===================================#
+
+	warGuildY-coordinate: 60
+
+#===================================#
+
+
+	distance.minSpawn: 500
+	distance.maxWorldBorder: 2500
+
+#===================================#
+	
+	guildVersion: 1.0_BETA #Nie ruszaj
+
+#===================================#
+
+	chat.Guild: {TAG} &7{PLAYER}: &f{MESSAGE}
+	chat.tagFormat: &8[&6{TAG}&8] 
+
+#===================================#
+
+	#Shcematic 
+	guild.Schematic: guild
+
+#===================================#
+
+#===================================================================================================================================================#
+on chat:
+	if {nBsGuilds::%player%::tag} is set:
+		set {_} to "{@chat.tagFormat}"
+		replace all "{TAG}" with "%{nBsGuilds::%player%::tag}%" in {_}
+		set {nBsGuilds::tagFormat} to "%{_}%"
+
+		set {_chat} to "{@chat.Guild}"
+		replace all "{TAG}" with "%{nBsGuilds::tagFormat}%" in {_chat}
+		replace all "{PLAYER}" with "%display name of player%" in {_chat}
+		replace all "{MESSAGE}" with "%message%" in {_chat}
+		cancel event
+		broadcast "%{_chat}%"
+		stop
+	else if {nBsGuilds::%player%::tag} is not set:
+		set {_chat} to "{@chat.Guild}"
+		replace all "{@chat.tagFormat}" with "" in {_chat}
+		replace all "{PLAYER}" with "%display name of player%" in {_chat}
+		replace all "{MESSAGE}" with "%message%" in {_chat}
+		replace all "{TAG} " with "" in {_chat}
+		cancel event
+		broadcast "%{_chat}%"
+		stop
+#===================================================================================================================================================#
+on first join:
+	if {nBsGuilds::%player%::pkt} is not set:
+		set {nBsGuilds::%player%::pkt} to 1000
+#===================================================================================================================================================#
+on join:
+	if {nBsGuilds::%player%::pkt} is not set:
+		set {nBsGuilds::%player%::pkt} to 1000
+#===================================================================================================================================================#
+command /zaloz [<text>] [<text>]:
+	trigger:
+		if arg 1 is set:
+			if {nBsGuilds::%arg 1%::guildTag::create} is not set:
+				if length of arg 1 is more than {@lengthOf.minTagGuild} -1:
+					if length of arg 1 is smaller than {@lengthOf.maxTagGuild} +1:
+						if arg 2 is set:
+							if {nBsGuilds::%arg 1%::guildFullName::create} is not set:
+								if length of arg 2 is more than {@lengthOf.minFullNameGuild} -1:
+									if length of arg 2 is smaller than {@lengthOf.maxFullNameGuild} +1:
+										if executor is player:
+											if player has permissions "nBsGuilds.vip":
+												if {nBsGuilds::%name of player%::tag} is not set:
+													if player has {@create.vip.Cost}:
+														if distance between player and {nBsGuilds::spawn} is greater than {@distance.maxWorldBorder}:
+															send "{@tag} &cJestes zbyt blisko granicy mapy"
+														else:
+															loop {nBsGuilds::Guilds::*}:
+																set {_tag} to loop-value parsed as text
+																if distance between {nBsGuilds::%{_tag}%::center} and location of player is less than 100:
+																	send "{@tag} &cJestes za blisko innej gildii"
+																	add 1 to {_cancel}
+																	stop
+															if distance between {nBsGuilds::spawn} and location of player is less than {@distance.minSpawn}:
+																send "{@tag} &cJestes za blisko spawno odejdz &6{@distance.minSpawn} &ckratek od spawnu!"
+																add 1 to {_cancel}
+																stop
+															if {_cancel} is not set:
+																remove {@create.vip.Cost} from the player
+																broadcast "{@tag} &7Gracz &6%name of player% &7zalozyl gildie &6%arg 2% &7[&6%arg 1%&7]"
+																set {nBsGuilds::%arg 1%::guildFullName::create} to arg 2
+																set {nBsGuilds::%arg 1%::guildTag::create} to arg 1
+																set {nBsGuilds::%arg 1%::lider} to "%name of player%"
+																set {nBsGuilds::%arg 1%::dataZalozeniaGildii} to now
+																set {nBsGuilds::%arg 1%::dataWygasnieciaGildii} to now
+																add 14 days to {nBsGuilds::%arg 1%::dataWygasnieciaGildii}
+																set {nBsGuilds::%arg 1%::warGuildDamage} to now
+																add 1 days to {nBsGuilds::%arg 1%::warGuildDamage}
+																add "%arg 1%" to {nBsGuilds::Guilds::*}
+																set {nBsGuilds::%arg 1%::pvp} to false
+																set {nBsGuilds::Points::%arg 1%} to "%{nBsGuilds::%player%::pkt}%"
+																set {nBsGuilds::%name of player%::tag} to arg 1
+																set {_loc} to block at location (x-coordinate of player, {@warGuildY-coordinate}, z-coordinate of player) in "{@World}"
+																spawn 1 ender crystal at {_loc}
+																set {nBsGuilds::%arg 1%::center} to {_loc}
+																set {nBsGuilds::%arg 1%::warGuildLives} to 3
+																"%arg 1%".Region.selectLS{location of player, 50};
+																add "%player%" to {nBsGuilds::%arg 1%::players::*}
+																paste schematic "{@guild.Schematic}" at {_loc}
+																stop
+													else:
+														send "{@tag} {@create.vip.error.Message.no-Items}"
+														stop
+												else:
+													send "{@tag} &cJestes juz w gildii!"
+													stop
+											else:
+												if {nBsGuilds::%name of player%::tag} is not set:
+													if player has {@create.player.Cost}:
+														if distance between player and {nBsGuilds::spawn} is greater than {@distance.maxWorldBorder}:
+															send "{@tag} &cJestes zbyt blisko granicy mapy"
+														else:
+															loop {nBsGuilds::Guilds::*}:
+																set {_tag} to loop-value parsed as text
+																if distance between {nBsGuilds::%{_tag}%::center} and location of player is less than 100:
+																	send "{@tag} &cJestes za blisko innej gildii"
+																	add 1 to {_cancel}
+																	stop
+															if distance between {nBsGuilds::spawn} and location of player is less than {@distance.minSpawn}:
+																send "{@tag} &cJestes za blisko spawno odejdz &6{@distance.minSpawn} &ckratek od spawnu!"
+																add 1 to {_cancel}
+																stop
+															if {_cancel} is not set:
+																remove {@create.player.Cost} from the player
+																broadcast "{@tag} &7Gracz &6%name of player% &7zalozyl gildie &6%arg 2% &7[&6%arg 1%&7]"
+																set {nBsGuilds::%arg 1%::guildFullName::create} to arg 2
+																set {nBsGuilds::%arg 1%::guildTag::create} to arg 1
+																set {nBsGuilds::%arg 1%::lider} to "%name of player%"
+																set {nBsGuilds::%arg 1%::dataZalozeniaGildii} to now
+																set {nBsGuilds::%arg 1%::dataWygasnieciaGildii} to now
+																add 14 days to {nBsGuilds::%arg 1%::dataWygasnieciaGildii}
+																set {nBsGuilds::%arg 1%::warGuildDamage} to now
+																add 1 days to {nBsGuilds::%arg 1%::warGuildDamage}
+																add "%arg 1%" to {nBsGuilds::Guilds::*}
+																set {nBsGuilds::%arg 1%::pvp} to false
+																set {nBsGuilds::Points::%arg 1%} to "%{nBsGuilds::%player%::pkt}%"
+																set {nBsGuilds::%name of player%::tag} to arg 1
+																set {_loc} to block at location (x-coordinate of player, {@warGuildY-coordinate}, z-coordinate of player) in "{@World}"
+																spawn 1 ender crystal at {_loc}
+																set {nBsGuilds::%arg 1%::center} to {_loc}
+																set {nBsGuilds::%arg 1%::warGuildLives} to 3
+																"%arg 1%".Region.selectLS{location of player, 50};
+																add "%player%" to {nBsGuilds::%arg 1%::players::*}
+																paste schematic "{@guild.Schematic}" at {_loc}
+																stop
+													else:
+														send "{@tag} {@create.player.error.Message.no-Items}"
+														stop
+												else:
+													send "{@tag} &cJestes juz w gildii!"
+													stop
+										else:
+											send "{@tag} &cTa komenda jest tylko dla &6PLAYER"
+											stop
+									else:
+										send "{@tag} &cPelna nazwa gildii jest za dluga musi miec maksymalnie &6{@lengthOf.maxFullNameGuild} &cznakow"
+										stop
+								else:
+									send "{@tag} &cPelna nazwa gildii jest za ktotka musi miec minimalnie &6{@lengthOf.minFullNameGuild} &cznakow"
+									stop
+							else:
+								send "{@tag} &cPodana gildia juz istnieje"
+								stop
+						else:
+							send "{@tag} &cPoprawne uzycie &6/zaloz <TAG> <NAZWA>"
+							stop
+					else:
+						send "{@tag} &cTag gildii jest za dlugi musi miec maksymalnie &6{@lengthOf.maxTagGuild} &cznakow"
+						stop
+				else:
+					send "{@tag} &cTag gildii jest za krotki musi miec minimalnie &6{@lengthOf.minTagGuild} &cznaki"
+					stop
+			else:
+				send "{@tag} &cPodana gildia juz istnieje"
+				stop
+		else:
+			send "{@tag} &cPoprawne uzycie &6/zaloz <TAG> <NAZWA>"
+			stop
+#===================================================================================================================================================#
+command /nBsGuilds [<text>] [<text>]:
+	aliases: ga, guilds, nbsa, bg
+	trigger:
+		if executor is console:
+			if arg 1 is "close":
+				if arg 2 is set:
+					if {nBsGuilds::%arg 2%::guildTag::create} is set:
+						set {_} to arg 2
+						delete {nBsGuilds::%{_}%::guildTag::create}
+						delete {nBsGuilds::%{_}%::guildFullName::create}
+						delete {nBsGuilds::%{_}%::lider}
+						delete {nBsGuilds::%{_}%::dataZalozeniaGildii}
+						delete {nBsGuilds::%{_}%::dataWygasnieciaGildii}
+						delete {nBsGuilds::%{_}%::warGuildDamag}
+						delete {nBsGuilds::%{_}%::opis}
+						remove "%{_}%" from {nBsGuilds::Guilds::*}
+						delete {nBsGuilds::%{_}%::pvp}
+						delete {nBsGuilds::%{_}%::Points}
+						delete {nBsGuilds::%{_}%::warGuildLives}
+						loop {nBsGuilds::%{_}%::players::*}:
+							delete {nBsGuilds::%loop-value%::tag}
+							make console execute command "/ne prefix %loop-value% &f"
+						delete {nBsGuilds::%{_}%::players::*}
+						"%{_}%".Region.delete{};
+						create explosion of force 3 at {nBsGuilds::%{_}%::center}
+						delete {nBsGuilds::%{_}%::center}
+						delete {nBsGuilds::%{_}%::explode}
+						stop
+					else:
+						send "{@tag} &cPodana gildia nie istnieje"
+						stop
+				else:
+					send "{@tag} &cPodaj tag gildii"
+					stop
+		else:
+			if arg 1 is "close":
+				if arg 2 is set:
+					if {nBsGuilds::%arg 2%::guildTag::create} is set:
+						set {_} to arg 2
+						delete {nBsGuilds::%{_}%::guildTag::create}
+						delete {nBsGuilds::%{_}%::guildFullName::create}
+						delete {nBsGuilds::%{_}%::lider}
+						delete {nBsGuilds::%{_}%::dataZalozeniaGildii}
+						delete {nBsGuilds::%{_}%::dataWygasnieciaGildii}
+						delete {nBsGuilds::%{_}%::warGuildDamag}
+						delete {nBsGuilds::%{_}%::opis}
+						remove "%{_}%" from {nBsGuilds::Guilds::*}
+						delete {nBsGuilds::%{_}%::pvp}
+						delete {nBsGuilds::%{_}%::Points}
+						delete {nBsGuilds::%{_}%::warGuildLives}
+						loop {nBsGuilds::%{_}%::players::*}:
+							delete {nBsGuilds::%loop-value%::tag}
+						delete {nBsGuilds::%{_}%::players::*}
+						"%{_}%".Region.delete{};
+						create explosion of force 3 at {nBsGuilds::%{_}%::center}
+						delete {nBsGuilds::%{_}%::center}
+						delete {nBsGuilds::%{_}%::explode}
+						stop
+					else:
+						send "{@tag} &cPodana gildia nie istnieje"
+						stop
+				else:
+					send "{@tag} &cPodaj tag gildii"
+					stop
+			if arg 1 is "setspawn":
+				if player has permissions "nBsGuilds.admin":
+					set {nBsGuilds::spawn} to location of player
+					send "{@tag} &7Spawn ustawiono na &6%location of player% &7w swiecie &6%world of player%"
+					stop
+				else:
+					send "{@tag} &cNie masz uprawnien"
+					stop
+			if arg 1 is "schematic" or "schemat":
+				if player has permissions "nBsGuilds.admin":
+					make player execute command "//copy"
+					make player execute command "//schematic save {@guild.Schematic}"
+					send "{@tag} &7Zapisano"
+					stop
+				else:
+					send "{@tag} &cNie masz uprawnien"
+					stop
+			if arg 1 is not set:
+				send "{@tag} &7Uzycie &6close/setspawn/schemat"
+				stop
+#===================================================================================================================================================#
+command /pvp [<text>]:
+	trigger:
+		if player has permissions "nBsGuilds.admin":
+			if arg 1 is set:
+				if {nBsGuilds::%arg 1%::guildTag::create} is set:
+					if {nBsGuilds::%arg 1%::pvp} is false:
+						loop {nBsGuilds::%arg 1%::players::*}:
+							send "{@tag} &7Administrator &6%name of player% &7ustawil status pvp na &6ON" to loop-value parsed as player
+						set {nBsGuilds::%arg 1%::pvp} to true
+						send "{@tag} &7Pvp dla gildii &6%arg 1% &7ustawiono na &6ON"
+						stop
+					if {nBsGuilds::%arg 1%::pvp} is true:
+						loop {nBsGuilds::%arg 1%::players::*}:
+							send "{@tag} &7Administrator &6%name of player% &7ustawil status pvp na &6OFF" to loop-value parsed as player
+						set {nBsGuilds::%arg 1%::pvp} to false
+						send "{@tag} &7Pvp dla gildii &6%arg 1% &7ustawiono na &6OFF"
+						stop
+				else:
+					send "{@tag} &cPodana gildia nie istnieje"
+					stop
+			else:
+				if {nBsGuilds::%player%::tag} is set:
+					if {nBsGuilds::%{nBsGuilds::%player%::tag}%::lider} is player:
+						if {nBsGuilds::%{nBsGuilds::%player%::tag}%::pvp} is false:
+							loop {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}:
+								send "{@tag} &7Lider twojej gildii ustawil status pvp na &6ON" to loop-value parsed as player
+							set {nBsGuilds::%{nBsGuilds::%player%::tag}%::pvp} to true
+							send "{@tag} &7Pvp dla gildii &6%{nBsGuilds::%player%::tag}% &7ustawiono na &6ON"
+							stop
+						if {nBsGuilds::%{nBsGuilds::%player%::tag}%::pvp} is true:
+							loop {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}:
+								send "{@tag} &7Lider twojej gildii ustawil status pvp na &6OFF" to loop-value parsed as player
+							set {nBsGuilds::%{nBsGuilds::%player%::tag}%::pvp} to false
+							send "{@tag} &7Pvp dla gildii &6%{nBsGuilds::%player%::tag}% &7ustawiono na &6OFF"
+							stop
+					else:
+						send "{@tag} &cNie jestes liderem gildii"
+						stop
+				else:
+					send "{@tag} &cNie jestes w zadnej gildii"
+					stop
+		else:
+			if arg 1 is not set:
+				if {nBsGuilds::%player%::tag} is set:
+					if {nBsGuilds::%{nBsGuilds::%player%::tag}%::lider} is player:
+						if {nBsGuilds::%{nBsGuilds::%player%::tag}%::pvp} is false:
+							loop {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}:
+								send "{@tag} &7Lider twojej gildii ustawil status pvp na &6ON" to loop-value parsed as player
+							set {nBsGuilds::%{nBsGuilds::%player%::tag}%::pvp} to true
+							send "{@tag} &7Pvp dla gildii &6%{nBsGuilds::%player%::tag}% &7ustawiono na &6ON"
+							stop
+						if {nBsGuilds::%{nBsGuilds::%player%::tag}%::pvp} is true:
+							loop {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}:
+								send "{@tag} &7Lider twojej gildii ustawil status pvp na &6OFF" to loop-value parsed as player
+							set {nBsGuilds::%{nBsGuilds::%player%::tag}%::pvp} to false
+							send "{@tag} &7Pvp dla gildii &6%{nBsGuilds::%player%::tag}% &7ustawiono na &6OFF"
+							stop
+					else:
+						send "{@tag} &cNie jestes liderem gildii"
+						stop
+				else:
+					send "{@tag} &cNie jestes w zadnej gildii"
+					stop
+			else:
+				send "{@tag} &cPoprawne uzycie &6/PVP"
+				stop
+#===================================================================================================================================================#
+command /usun [<text>]:
+	trigger:
+		if player has permissions "nBsGuilds.admin":
+			if arg 1 is set:
+				if {nBsGuilds::%arg 1%::guildTag::create} is set:
+					broadcast "{@tag} &7Usunoles gilide &6%{nBsGuilds::%arg 1%::guildFullName::create}% &7[&6%{nBsGuilds::%arg 1%::guildTag::create}%&7]"
+					make console execute command "/nBsGuilds close %arg 1%"
+					stop
+				else:
+					send "{@tag} &cPodna gildia nie istnieje"
+					stop
+			else:
+				if {nBsGuilds::%player%::tag} is set:
+					if {nBsGuilds::%{nBsGuilds::%player%::tag}%::lider} is player:
+						broadcast "{@tag} &7Gracz &6%player% &7usunol gilide &6%{nBsGuilds::%{nBsGuilds::%player%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%player%::tag}%&7]"
+						make console execute command "/nBsGuilds close %{nBsGuilds::%player%::tag}%"
+						stop
+					else:
+						send "{@tag} &cNie jestes liderem gildii"
+						stop
+				else:
+					send "{@tag} &cNie jestes w zadnej gildii"
+					stop
+		else:
+			if arg 1 is not set:
+				if {nBsGuilds::%player%::tag} is set:
+					if {nBsGuilds::%{nBsGuilds::%player%::tag}%::lider} is player:
+						broadcast "{@tag} &7Gracz &6%player% &7usunol gilide &6%{nBsGuilds::%{nBsGuilds::%player%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%player%::tag}%&7]"
+						make console execute command "/nBsGuilds close %{nBsGuilds::%player%::tag}%"
+						stop
+					else:
+						send "{@tag} &cNie jestes liderem gildii"
+						stop
+				else:
+					send "{@tag} &cNie jestes w zadnej gildii"
+					stop	
+			else:
+				send "{@tag} &cPoprawne uzycie &6/Usun"
+				stop
+#===================================================================================================================================================#
+command /zapros [<text>]:
+	trigger:
+		if arg 1 is set:
+			if {nBsGuilds::%player%::tag} is set:
+				if {nBsGuilds::%{nBsGuilds::%player%::tag}%::lider} is player:
+					if arg 1 parsed as player is online:
+						if {nBsGuilds::join::%arg 1%::%{nBsGuilds::%player%::tag}%} is not set:
+							set {_size} to size of {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}
+							set {_diax} to {_size}*8
+							send "{@tag} &7Zostales zaproszony do gildii &6%{nBsGuilds::%{nBsGuilds::%player%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%player%::tag}%&7]" to arg 1 parsed as player
+							send "{@tag} &7Koszt dolaczenia wynosi &6%{_diax}% &7diamentow" to arg 1 parsed as player
+							send "{@tag} &7Aby dolaczyc wpisz &6/dolacz %{nBsGuilds::%player%::tag}%" to arg 1 parsed as player
+							send "{@tag} &7Zaprosiles gracza &6%arg 1 parsed as player%"
+							send "{@tag} &7Koszt dolaczenia wynosi &6%{_diax}% &7diamentow"
+							set {nBsGuilds::join::%arg 1%::%{nBsGuilds::%player%::tag}%} to 1
+							wait 60 seconds
+							if {nBsGuilds::join::%arg 1%::%{nBsGuilds::%player%::tag}%} is 1:
+								delete {nBsGuilds::join::%arg 1%::%{nBsGuilds::%player%::tag}%}
+							stop
+						else:
+							delete {nBsGuilds::join::%arg 1%::%{nBsGuilds::%player%::tag}%}
+							send "{@tag} &7Wycofano zaproszenie do gildii &6%{nBsGuilds::%{nBsGuilds::%player%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%player%::tag}%&7]" to arg 1 parsed as player
+							send "{@tag} &7Wycofano zaproszenie gracza &6%arg 1 parsed as player% &7do gildii"
+							stop
+					else:
+						send "{@tag} &cPodany gracza nie jest online"
+						stop
+				else:
+					send "{@tag} &cNie jestes liderem gildii"
+					stop
+			else:
+				send "{@tag} &cNie jestes w zadnej gildii"
+				stop
+		else:
+			send "{@tag} &cPoprawne uzycie &6/Zapros <NICK>"
+			stop
+#===================================================================================================================================================#
+on damage:
+	if victim is a ender crystal:
+		set {_r} to Region.getAt{location of victim};
+		if {_r} is not set:
+			stop
+		if {_r} is set:
+			if projectile is a arrow:
+				cancel event
+				stop
+			else:
+				if {nBsGuilds::%attacker%::tag} is set:
+					if "%{_r}%" is not "%{nBsGuilds::%attacker%::tag}%":
+						if {nBsGuilds::%{_r}%::warGuildLives} is more than 0:
+							if {nBsGuilds::%{_r}%::warGuildDamage} is greater than now:
+								cancel event
+								send "{@tag} &7Gildia &6%{nBsGuilds::%{_r}%::guildFullName::create}% &7[&6%{nBsGuilds::%{_r}%::guildTag::create}%&7] zostala nie dawno podbita. Bedziesz mogl ja podbic &6%{nBsGuilds::%{_r}%::warGuildDamage}%" to attacker
+								stop
+							else:
+								cancel event
+								remove 1 from {nBsGuilds::%{_r}%::warGuildLives}
+								add 1 days to {nBsGuilds::%{_r}%::warGuildDamage}
+								add 1 to {nBsGuilds::%{nBsGuilds::%attacker%::tag}%::warGuildLives}
+								broadcast "{@tag} &7Gildia &6%{nBsGuilds::%{_r}%::guildFullName::create}% &7[&6%{nBsGuilds::%{_r}%::guildTag::create}%&7] zostala uderzona przez gildie &6%{nBsGuilds::%{nBsGuilds::%attacker%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%attacker%::tag}%&7] pozostalo jej &6%{nBsGuilds::%{_r}%::warGuildLives}% &7zyc"
+								wait 1 tick
+								if {nBsGuilds::%{_r}%::warGuildLives} is 0:
+									kill victim
+									broadcast "{@tag} &7Gildia &6%{nBsGuilds::%{_r}%::guildFullName::create}% &7[&6%{nBsGuilds::%{_r}%::guildTag::create}%&7] zostala podbita przez gildie &6%{nBsGuilds::%{nBsGuilds::%attacker%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%attacker%::tag}%&7]"
+									make console execute command "/nBsGuilds close %{_r}%"
+									stop
+						else if {nBsGuilds::%{_r}%::warGuildLives} is 0:
+							if {nBsGuilds::%{_r}%::warGuildDamage} is greater than now:
+								cancel event
+								send "{@tag} &7Gildia &6%{nBsGuilds::%{_r}%::guildFullName::create}% &7[&6%{nBsGuilds::%{_r}%::guildTag::create}%&7] zostala nie dawno podbita. Bedziesz mogl ja podbic &6%{nBsGuilds::%{_r}%::warGuildDamage}%" to attacker
+								stop
+							else:
+								kill victim
+								broadcast "{@tag} &7Gildia &6%{nBsGuilds::%{_r}%::guildFullName::create}% &7[&6%{nBsGuilds::%{_r}%::guildTag::create}%&7] zostala podbita przez gildie &6%{nBsGuilds::%{nBsGuilds::%attacker%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%attacker%::tag}%&7]"
+								make console execute command "/nBsGuilds close %{_r}%"
+								stop
+					else:
+						cancel event
+						send "{@tag} &cNie mozesz sam sobie podbic gildii" to attacker
+						stop
+				else:
+					cancel event
+					send "{@tag} &cAby podbic gildie muszsisz byc w gildii" to attacker
+					stop
+	else if victim is a player:
+		if {nBsGuilds::%attacker%::tag} is set:
+			if "%{nBsGuilds::%attacker%::tag}%" is "%{nBsGuilds::%victim%::tag}%":
+				if {nBsGuilds::%{nBsGuilds::%attacker%::tag}%::pvp} is false:
+					send "{@tag} &cNie mozesz zatakowac &6%victim%" to attacker
+					cancel event
+					stop
+#===================================================================================================================================================#
+command /wyrzuc [<text>]:
+	trigger:
+		if arg 1 is set:
+			if {nBsGuilds::%player%::tag} is set:
+				if {nBsGuilds::%{nBsGuilds::%player%::tag}%::lider} is player:
+					if {nBsGuilds::%player%::tag} is {nBsGuilds::%arg 1 parsed as player%::tag}:
+						if arg 1 parsed as player is online:
+							if arg 1 is not "%player%":
+								broadcast "{@tag} &7Gracz &6%arg 1 parsed as player% &7zostal wyrzucony z gildii &6%{nBsGuilds::%{nBsGuilds::%player%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%player%::tag}%&7]"
+								remove "%arg 1 parsed as player%" from {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}
+								delete {nBsGuilds::%arg 1 parsed as player%::tag}
+								stop
+							else:
+								send "{@tag} &cNie mozesz sam siebie wyrzucic!"
+								stop
+						else:
+							send "{@tag} &cPodany gracz nie jest online"
+							stop
+					else:
+						send "{@tag} &cPodany gracz nie jest z twojej gildii"
+						stop
+				else:
+					send "{@tag} &cNie jestes liderem gildii"
+					stop
+			else:
+				send "{@tag} &cNie jestes w zadnej gildii"
+				stop
+		else:
+			send "{@tag} &cPoprawne uzycie &6/Wyrzuc <NICK>"
+			stop
+#===================================================================================================================================================#
+command /dolacz [<text>]:
+	trigger:
+		if player has permissions "nBsGuilds.admin":
+			if arg 1 is set:
+				if {nBsGuilds::%arg 1%::guildTag::create} is set:
+					if {nBsGuilds::join::%player%::%arg 1%} is set:
+						if {nBsGuilds::%player%::tag} is not set:
+							set {_size} to size of {nBsGuilds::%arg 1%::players::*}
+							set {_diax} to {_size}*8
+							if player has "%{_diax}% diamonds" parsed as item type:
+								remove "%{_diax}% diamonds" parsed as item type from the player
+								delete {nBsGuilds::join::%player%::%arg 1%}
+								set {nBsGuilds::%player%::tag} to "%{nBsGuilds::%arg 1%::guildTag::create}%"
+								add "%name of player%" to {nBsGuilds::%arg 1%::players::*}
+								broadcast "{@tag} &7Gracz &6%player% &7dolaczyl do gildii &6%{nBsGuilds::%arg 1%::guildFullName::create}% &7[&6%{nBsGuilds::%arg 1%::guildTag::create}%&7]"
+								stop
+							else:
+								send "{@tag} &cAby dolaczyc do gildii potrzebujesz &6%{_diax}% &cdiamentow"
+								stop
+						else:
+							send "{@tag} &cJestes juz w innej gildii"
+							stop
+					else:
+						if {nBsGuilds::%player%::tag} is not set:
+							set {_size} to size of {nBsGuilds::%arg 1%::players::*}
+							set {_diax} to {_size}*8
+							if player has "%{_diax}% diamonds" parsed as item type:
+								remove "%{_diax}% diamonds" parsed as item type from the player
+								delete {nBsGuilds::join::%player%::%arg 1%}
+								set {nBsGuilds::%player%::tag} to "%{nBsGuilds::%arg 1%::guildTag::create}%"
+								add "%name of player%" to {nBsGuilds::%arg 1%::players::*}
+								broadcast "{@tag} &7Gracz &6%player% &7dolaczyl do gildii &6%{nBsGuilds::%arg 1%::guildFullName::create}% &7[&6%{nBsGuilds::%arg 1%::guildTag::create}%&7]"
+								stop
+							else:
+								send "{@tag} &cAby dolaczyc do gildii potrzebujesz &6%{_diax}% &cdiamentow"
+								stop
+						else:
+							send "{@tag} &cJestes juz w innej gildii"
+							stop
+				else:
+					send "{@tag} &cPodana gildia nie istnieje"
+					stop
+			else:
+				send "{@tag} &cPoprawne uzycie &6/Dolacz <TAG>"
+				stop
+		else:
+			if arg 1 is set:
+				if {nBsGuilds::%arg 1%::guildTag::create} is set:
+					if {nBsGuilds::join::%player%::%arg 1%} is set:
+						if {nBsGuilds::%player%::tag} is not set:
+							set {_size} to size of {nBsGuilds::%arg 1%::players::*}
+							set {_diax} to {_size}*8
+							if player has "%{_diax}% diamonds" parsed as item type:
+								remove "%{_diax}% diamonds" parsed as item type from the player
+								delete {nBsGuilds::join::%player%::%arg 1%}
+								set {nBsGuilds::%player%::tag} to "%{nBsGuilds::%arg 1%::guildTag::create}%"
+								add "%name of player%" to {nBsGuilds::%arg 1%::players::*}
+								broadcast "{@tag} &7Gracz &6%player% &7dolaczyl do gildii &6%{nBsGuilds::%arg 1%::guildFullName::create}% &7[&6%{nBsGuilds::%arg 1%::guildTag::create}%&7]"
+								stop
+							else:
+								send "{@tag} &cAby dolaczyc do gildii potrzebujesz &6%{_diax}% &cdiamentow"
+								stop
+						else:
+							send "{@tag} &cJestes juz w innej gildii"
+							stop
+					else:
+						send "{@tag} &cNie zostales zaproszony do podanej gildii"
+						stop
+				else:
+					send "{@tag} &cPodana gildia nie istnieje"
+					stop
+			else:
+				send "{@tag} &cPoprawne uzycie &6/Dolacz <TAG>"
+				stop
+#===================================================================================================================================================#
+command /opusc [<text>]:
+	trigger:
+		if arg 1 is not set:
+			if {nBsGuilds::%player%::tag} is set:
+				if {nBsGuilds::%{nBsGuilds::%player%::tag}%::lider} is not player:
+					broadcast "{@tag} &7Gracz &6%player% &7opuscil gildie &6%{nBsGuilds::%{nBsGuilds::%player%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%player%::tag}%&7]"
+					remove "%player%" from {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}
+					delete {nBsGuilds::%player%::tag}
+					stop
+				else:
+					send "{@tag} &cJestes liderem gildii nie mozesz opuscic gildii"
+					stop
+			else:
+				send "{@tag} &cNie jestes w zadnej gildii"
+				stop
+		else:
+			send "{@tag} &cPoprawne uzycie &6/Opusc"
+			stop
+#===================================================================================================================================================#
+command /baza [<text>]:
+	trigger:
+		if player has permissions "nBsGuilds.admin":
+			if arg 1 is set:
+				if {nBsGuilds::%arg 1%::guildTag::create} is set:
+					send "{@tag} &7Przeteleportowano do gildii &6%arg 1 %"
+					teleport player to {nBsGuilds::%arg 1 %::center}
+					stop
+				else:
+					send "{@tag} &cPodna gildia nie istnieje"
+					stop
+			else if arg 1 is not set:
+				if {nBsGuilds::%player%::tag} is set:
+					send "{@tag} &7Teleportacja nastapi za &65 &7sekund"
+					set {_loc} to block at location of player
+					loop 5 times:
+						wait 1 seconds
+						if {_loc} is block at location of player:
+							add 1 to {_}
+						else:
+							send "{@tag} &cRuszyles sie teleportacja anulowana"
+							stop
+					if {_} is 5:
+						teleport player to {nBsGuilds::%{nBsGuilds::%player%::tag}%::center}
+						send "{@tag} &7Przeteleportowano"
+						stop
+		else:
+			if arg 1 is not set:
+				if {nBsGuilds::%player%::tag} is set:
+					send "{@tag} &7Teleportacja nastapi za &65 &7sekund"
+					set {_loc} to block at location of player
+					loop 5 times:
+						wait 1 seconds
+						if {_loc} is block at location of player:
+							add 1 to {_}
+						else:
+							send "{@tag} &cRuszyles sie teleportacja anulowana"
+							stop
+					if {_} is 5:
+						teleport player to {nBsGuilds::%{nBsGuilds::%player%::tag}%::center}
+						send "{@tag} &7Przeteleportowano"
+						stop
+#===================================================================================================================================================#
+command /g [<text>]:
+	aliases: gpomoc, gildie, gildiapomoc, gildiepomoc, guild, guilds
+	trigger:
+		if arg 1 is not set:
+			send "&8~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+			send "&6/Zaloz &7- Zaklada gildie"
+			send "&6/Usun &7- Usuwa gildie"
+			send "&6/Zapros &7- Zaprasza do gildii"
+			send "&6/Dolacz &7- Dolacza do gildii"
+			send "&6/PVP &7- Ustawia pvp"
+			send "&6/Baza &7- Teleportuje do gildii"
+			send "&6/Gilida &7- Informacje o gildii"
+			send "&6/Opusc &7- Opuszczasz gildie"
+			send "&6/Wyrzuc &7- Wyrzuca gracza z gildii"
+			send "&6/Odnow &7- Odnawia gildie"
+			send "&8~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+			stop
+		else:
+			send "&8~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+			send "&6/Zaloz &7- Zaklada gildie"
+			send "&6/Usun &7- Usuwa gildie"
+			send "&6/Zapros &7- Zaprasza do gildii"
+			send "&6/Dolacz &7- Dolacza do gildii"
+			send "&6/PVP &7- Ustawia pvp"
+			send "&6/Baza &7- Teleportuje do gildii"
+			send "&6/Gilida &7- Informacje o gildii"
+			send "&6/Opusc &7- Opuszczasz gildie"
+			send "&6/Wyrzuc &7- Wyrzuca gracza z gildii"
+			send "&6/Odnow &7- Odnawia gildie"
+			send "&8~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+			stop
+#===================================================================================================================================================#
+command /gildia [<text>]:
+	trigger:
+		if arg 1 is set:
+			if {nBsGuilds::%arg 1%::guildTag::create} is set:
+				wait 2 tick
+				open chest with 3 rows named "&7Informajce o gildii &6%{nBsGuilds::%arg 1%::guildTag::create}%" to player
+				wait 1 tick
+				format slot 10 of player with 1 of bow named "&7Zycia:" with lore "&7Zycia gildii: &6%{nBsGuilds::%arg 1%::warGuildLives}%" to be unstealable
+				format slot 11 of player with 1 of arrow named "&7Wygasniecie:" with lore "&7Data wygasniecia gildii: &6%{nBsGuilds::%arg 1%::dataWygasnieciaGildii}%" to be unstealable
+				format slot 12 of player with 1 of wooden sword block named "&7Zalozenie:" with lore "&7Data zalozenia gildii: &6%{nBsGuilds::%arg 1%::dataZalozeniaGildii}%" to be unstealable
+				format slot 13 of player with 1 of beacon named "&7Punkty:" with lore "&7Punkty gildii: &6%{nBsGuilds::Points::%arg 1%}%" to be unstealable
+				format slot 14 of player with 1 of golden axe named "&7Lider:" with lore "&7Lider gildii: &6%{nBsGuilds::%arg 1%::lider}%" to be unstealable
+				if {nBsGuilds::%arg 1%::pvp} is true:
+					format slot 15 of player with 1 of diamond sword named "&7PVP:" with lore "&7PVP: &6ON" to be unstealable
+				else:
+					format slot 15 of player with 1 of diamond sword named "&7PVP:" with lore "&7PVP: &6OFF" to be unstealable
+				format slot 16 of player with 1 of pumpkin named "&7Czlonkowie:" with lore "&8Wkrotce +" to close then run "players %arg 1%"
+				stop
+			else:
+				send "{@tag} &cPodna gilide nie istnieje"
+				stop
+		else:
+			if {nBsGuilds::%player%::tag} is set:
+				make player execute command "/Gildia %{nBsGuilds::%player%::tag}%"
+				stop
+			else:
+				send "{@tag} &cPoprawne uzycie &6/Gildia <TAG>"
+				stop
+#===================================================================================================================================================#
+on explode:
+	set {_r} to Region.getAt{location of event-location};
+	if {_r} is not set:
+		stop
+	if {_r} is set:
+		set {nBsGuilds::%{_r}%::explode} to 180
+#===================================================================================================================================================#
+on place:
+	set {_r} to Region.getAt{location of event-block};
+	if {_r} is not set:
+		stop
+	if {_r} is set:
+		if "%{_r}%" is "%{nBsGuilds::%player%::tag}%":
+			if {nBsGuilds::%{_r}%::explode} is set:
+				send "{@tag} &cNa terenie gildii wybuchlo TNT. Mozesz budowac jeszcze przez &6%{nBsGuilds::%{_r}%::explode}%"
+				cancel event
+				stop
+		else:
+			cancel event
+			send "{@tag} &cTo jest teren innej gildii"
+			stop
+#===================================================================================================================================================#
+on break:
+	set {_r} to Region.getAt{location of event-block};
+	if {_r} is not set:
+		stop
+	if {_r} is set:
+		if "%{_r}%" is "%{nBsGuilds::%player%::tag}%":
+			if {nBsGuilds::%{_r}%::explode} is set:
+				send "{@tag} &cNa terenie gildii wybuchlo TNT. Mozesz budowac jeszcze przez &6%{nBsGuilds::%{_r}%::explode}%"
+				cancel event
+				stop
+		else:
+			cancel event
+			send "{@tag} &cTo jest teren innej gildii"
+			stop
+#===================================================================================================================================================#
+on load:
+	loop {nBsGuilds::Guilds::*}:
+		set {_} to loop-value parsed as text
+		"%{_}%".Region.selectLS{location of {nBsGuilds::%{_}%::center}, 50};
+	stop
+#===================================================================================================================================================#
+on every 1 seconds:
+	loop {nBsGuilds::Guilds::*}:
+		set {_guild} to loop-value parsed as text
+		if {nBsGuilds::%{_guild}%::explode} is set:
+			if {nBsGuilds::%{_guild}%::explode} is more than 0:
+				remove 1 from {nBsGuilds::%{_guild}%::explode}
+				stop
+			else if {nBsGuilds::%{_guild}%::explode} is smaller than 1:
+				delete {nBsGuilds::%{_guild}%::explode}
+				stop
+		if {nBsGuilds::%{_guild}%::dataWygasnieciaGildii} is less than now:
+			broadcast "{@tag} &7Gildia &6%{_guild}% &7wygasla jej stare koordynaty to X: &6%x-coordinate of {nBsGuilds::%{_guild}%::center}%&7, Z: &6%z-coordinate of {nBsGuilds::%{_guild}%::center}%"
+			make console execute command "/nBsGuilds close %{_guild}%"
+			stop
+#===================================================================================================================================================#
+on every 60 seconds:
+	loop {nBsGuilds::Guilds::*}:
+		set {_guild} to loop-value parsed as text
+		set {_points} to {nBsGuilds::Points::%{_guild}%}
+		set {_dziel} to 0
+		loop {nBsGuilds::%{_guild}%::players::*}:
+			set {_player} to loop-value parsed as text
+			set {_points} to {_points}+{nBsGuilds::%{_player}%::pkt}
+			set {_dziel} to {_dziel}+1
+		set {nBsGuilds::Points::%{_guild}%} to {_points}/{_dziel}
+#===================================================================================================================================================#
+command /odnow [<text>] [<text>]:
+	trigger:
+		if player has permissions "nBsGuilds.admin":
+			if arg 1 is set:
+				if arg 1 is set:
+					if {nBsGuilds::%arg 1 %::guildTag::create} is set:
+						loop {nBsGuilds::%arg 1 %::players::*}:
+							send "{@tag} &7Administrator &6%player% &7przedluzyl waznosc gildii o &63 &7dni" to loop-value parsed as player
+						add 3 days to {nBsGuilds::%arg 1%::dataWygasnieciaGildii}
+						send "{@tag} &7Przedluzono waznosc gildiit &6%{nBsGuilds::%arg 1%::guildTag::create}% &7o &6%arg 2% &7dni"
+						stop
+					else:
+						send "{@tag} &cPodna gildia nie istnieje"
+						stop
+			else:
+				if arg 1 is not set:
+					if arg 2 is not set:
+						if {nBsGuilds::%player%::tag} is set:
+							if {nBsGuilds::%{nBsGuilds::%player%::tag}%::lider} is player:
+								set {_size} to size of {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}
+								set {_diax} to {_size}*9+6*{_size}
+								if player has "%{_diax}% diamonds" parsed as item type:
+									remove "%{_diax}% diamonds" parsed as item type from the player
+									add 3 days to {nBsGuilds::%{nBsGuilds::%player%::tag}%::dataWygasnieciaGildii}
+									loop {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}:
+										send "{@tag} &7Lider twojej gildii przedluzyl waznosc gildii o &63 &7dni" to loop-value parsed as player
+									broadcast "{@tag} &7Gracz &6%player% &7przedluzyl waznosc gildii &6%{nBsGuilds::%{nBsGuilds::%player%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%player%::tag}%&7] o &63 &7dni"
+									stop
+								else:
+									send "{@tag} &cAby przedluzyc gildie potrzebujesz &6%{_diax}% &cdiamentow"
+									stop
+							else:
+								send "{@tag} &cNie jestes liderem gildii"
+								stop
+						else:
+							send "{@tag} &cNie jestes w zadnej gildii"
+							stop
+					else:
+						send "{@tag} &cPoprawne uzycie &6/Odnow"
+						stop
+				else:
+					send "{@tag} &cPoprawne uzycie &6/Odnow"
+					stop
+		else:
+			if arg 1 is not set:
+				if arg 2 is not set:
+					if {nBsGuilds::%player%::tag} is set:
+						if {nBsGuilds::%{nBsGuilds::%player%::tag}%::lider} is player:
+							set {_size} to size of {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}
+							set {_diax} to {_size}*9+6*{_size}
+							if player has "%{_diax}% diamonds" parsed as item type:
+								remove "%{_diax}% diamonds" parsed as item type from the player
+								add 3 days to {nBsGuilds::%{nBsGuilds::%player%::tag}%::dataWygasnieciaGildii}
+								loop {nBsGuilds::%{nBsGuilds::%player%::tag}%::players::*}:
+									send "{@tag} &7Lider twojej gildii przedluzyl waznosc gildii o &63 &7dni" to loop-value parsed as player
+								broadcast "{@tag} &7Gracz &6%player% &7przedluzyl waznosc gildii &6%{nBsGuilds::%{nBsGuilds::%player%::tag}%::guildFullName::create}% &7[&6%{nBsGuilds::%player%::tag}%&7] o &63 &7dni" 
+								stop
+							else:
+								send "{@tag} &cAby przedluzyc gildie potrzebujesz &6%{_diax}% &cdiamentow"
+								stop
+						else:
+							send "{@tag} &cNie jestes liderem gildii"
+							stop
+					else:
+						send "{@tag} &cNie jestes w zadnej gildii"
+						stop
+				else:
+					send "{@tag} &cPoprawne uzycie &6/Odnow"
+					stop
+			else:
+				send "{@tag} &cPoprawne uzycie &6/Odnow"
+				stop
+#===================================================================================================================================================#
+on anymove:
+	set {_r} to Region.getAt{location of player};
+	if {_r} is not set:
+		if {nBsGuilds::%player%::loc} is set:
+			remove bossbar from player
+			delete {nBsGuilds::%player%::loc}
+			stop
+	if {_r} is set:
+		if {nBsGuilds::%player%::loc} is not set:
+			if {nBsGuilds::%player%::tag} is set:
+				if "%{_r}%" is not "%{nBsGuilds::%player%::tag}%":
+					set {nBsGuilds::%player%::loc} to "%{_r}%"
+					display "&c%{nBsGuilds::%{_r}%::guildFullName::create}% &8[&c%{_r}%&8]" on bossbar with 100 percent by 10 seconds for player	
+					stop
+				else:	
+					set {nBsGuilds::%player%::loc} to "%{_r}%"
+					display "&a%{nBsGuilds::%{_r}%::guildFullName::create}% &8[&a%{_r}%&8]" on bossbar with 100 percent by 10 seconds for player	
+					stop
+			else:
+				set {nBsGuilds::%player%::loc} to "%{_r}%"
+				display "&c%{nBsGuilds::%{_r}%::guildFullName::create}% &8[&c%{_r}%&8]" on bossbar with 100 percent by 10 seconds for player	
+				stop
+#===================================================================================================================================================#
