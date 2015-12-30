@@ -1,0 +1,49 @@
+#== nBsGuilds API ==#
+
+#=> Ranking gracza
+
+Variable/Zmienna: {nBsGuilds::%PLAYER%::pkt}
+
+#=> Gildia gracza
+
+Variable/Zmienna: {nBsGuilds::%PLAYER%::tag}
+
+#=> Pelna nazwa gildii 
+
+Variable/Zmienna: {nBsGuilds::%TAG%::guildFullName::create}
+
+#=> Skrot gildii
+
+Variable/Zmienna: {nBsGuilds::%TAG%::guildTag::create}
+
+#=> Lider gildii
+
+Variable/Zmienna: {nBsGuilds::%TAG%::lider}
+
+#=> Zalozenie gildii
+
+Variable/Zmienna: {nBsGuilds::%TAG%::dataZalozeniaGildii}
+
+#=> Wygasanie gildii
+
+Variable/Zmienna: {nBsGuilds::%TAG%::dataWygasnieciaGildii}
+
+#=> Czas kiedy mozna atakowa gildie
+
+Variable/Zmienna: {nBsGuilds::%TAG%::warGuildDamage}
+
+#=> Czy jest PVP w gildii (TRUE/FALSE)
+
+Variable/Zmienna: {nBsGuilds::%TAG%::pvp}
+
+#=> Ranking gildii
+
+Variable/Zmienna: {nBsGuilds::Points::%TAG%}
+
+#=> Srodek gildii
+
+Variable/Zmienna: {nBsGuilds::%TAG%::center}
+
+#=> Zycia gildii
+
+Variable/Zmienna: {nBsGuilds::%arg 1%::warGuildLives}
